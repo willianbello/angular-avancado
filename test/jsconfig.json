@@ -1,0 +1,10 @@
+{
+    "include": [
+        "**/*.js",
+        "**/**/*.js",
+        "**/*.ts",
+        "**/**/*.ts",
+        "**/*.json",
+        "node_modules/@wdio/sync",
+    ]
+}
