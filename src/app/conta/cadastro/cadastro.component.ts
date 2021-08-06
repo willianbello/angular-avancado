@@ -9,6 +9,7 @@ import { ContaService } from '../services/conta.service';
 import { DisplayMessage, GenericValidator, ValidationMessages } from '../utils/generic-form-validation';
 
 import { CustomValidators } from 'ng2-validation';
+import { Router } from '@angular/router';
 
 
 @Component({
@@ -27,9 +28,13 @@ export class CadastroComponent implements OnInit, AfterViewInit {
   genericValidator: GenericValidator;
   displayMessage: DisplayMessage = {};
 
+  mudancasNaoSalvas: boolean;
+
   constructor(private fb: FormBuilder,
-              private contaService: ContaService
+    private contaService: ContaService,
+    private router: Router,
   ) {
+
     this.validationMessages = {
       email: {
         required: 'Informe o e-mail',
@@ -44,20 +49,20 @@ export class CadastroComponent implements OnInit, AfterViewInit {
         rangeLength: 'A senha deve possuir entre 6 e 15 caracteres',
         equalTo: 'As senhas não conferem'
       }
-    }
+    };
 
     this.genericValidator = new GenericValidator(this.validationMessages);
   }
 
   ngOnInit(): void {
 
-    let senha = new FormControl('', [Validators.required, CustomValidators.rangeLength([6,15])]);
-    let senhaConfirmacao = new FormControl('', [Validators.required, CustomValidators.rangeLength([6,15]), CustomValidators.equalTo(senha)]);
+    let senha = new FormControl('', [Validators.required, CustomValidators.rangeLength([6, 15])]);
+    let senhaConfirm = new FormControl('', [Validators.required, CustomValidators.rangeLength([6, 15]), CustomValidators.equalTo(senha)]);
 
     this.cadastroForm = this.fb.group({
-      email: ['', Validators.required, Validators.email],
+      email: ['', [Validators.required, Validators.email]],
       password: senha,
-      confirmPassword: senhaConfirmacao,
+      confirmPassword: senhaConfirm
     });
   }
 
@@ -67,15 +72,37 @@ export class CadastroComponent implements OnInit, AfterViewInit {
 
     merge(...controlBlurs).subscribe(() => {
       this.displayMessage = this.genericValidator.processarMensagens(this.cadastroForm);
-    })
+      this.mudancasNaoSalvas = true;
+    });
   }
 
-  public adicionarConta() {
+  adicionarConta() {
     if (this.cadastroForm.dirty && this.cadastroForm.valid) {
       this.usuario = Object.assign({}, this.usuario, this.cadastroForm.value);
 
-      // this.contaService.registrarUsuario(this.usuario)
+      this.contaService.registrarUsuario(this.usuario)
+      .subscribe(
+          sucesso => { this.processarSucesso(sucesso) },
+          falha => { this.processarFalha(falha) }
+      );
+
+      this.mudancasNaoSalvas = false;
     }
+  }
+
+
+  processarSucesso(response: any): void {
+    this.cadastroForm.reset();
+    this.errors = [];
+    console.log(response);
+    
+    this.contaService.LocalStorage.salvarDadosLocaisUsuario(response);
+    
+    this.router.navigate(['/home']);
+  }
+
+  processarFalha(fail: any): void {
+    this.errors = fail.error.errors;
   }
 
 }
